@@ -4,6 +4,7 @@ import heapq
 import nltk
 from sklearn.metrics.pairwise import cosine_similarity
 
+
 class StackedDecoder:
 
     # tokenize text using nltk lib
