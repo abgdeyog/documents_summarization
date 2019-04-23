@@ -1,5 +1,34 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+def build_dict(query):
+    '''
+    build dictionary from query
+    :param query: []
+    :return: {term:frequency}
+    '''
+    dict = {}
+    for word in query:
+        try:
+            dict[word] += 1
+        except KeyError:
+            dict[word] = 1
+    return dict
+
+def cosine_scoring(dict1, dict2):
+    """
+    :param dict1: dictionary - term:frequency
+    :param dict2: dictionary - term:frequency
+    :return: score
+    """
+    score = 0
+    for term in dict1:
+        try:
+            score += dict1[term] * dict2[term]
+        except KeyError:
+            pass
+    if len(dict1)*len(dict2) == 0:
+        return 0
+    return score/(len(dict1)*len(dict2))
 
 def sentence_length(sentence):
     sentence = sentence.replace('\n', '').replace("'", "").replace("`", "")
