@@ -105,11 +105,19 @@ def text_rank(document, n):
         similarity[i] = {}
         for j in range(len(sentences)):
             if i != j:
-                val = cosine_similarity(np.array(sentence_vectors[i]).reshape(1, -1),
+                try:
+                    val = cosine_similarity(np.array(sentence_vectors[i]).reshape(1, -1),
                                                      np.array(sentence_vectors[j]).reshape(1, -1))[0][0]
+                except:
+                    val = 0
                 similarity[i][j] = {"weight": val}
     graph = networkx.from_dict_of_dicts(similarity)
     scores = networkx.pagerank(graph)
     top = sorted(scores, key=scores.get, reverse=True)[0:n]
     top_sorted = sorted(top)
-    return [sentences[number] for number in top], [sentences[number] for number in top_sorted]
+    return [sentences[number] for number in top]\
+        #, [sentences[number] for number in top_sorted]
+
+file_in = open("data/test.txt", "r")
+file_out = open("data/test_out.txt", "w+")
+file_out.write(' '.join(text_rank(file_in.read(), 6)))

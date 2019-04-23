@@ -38,7 +38,7 @@ class StackedDecoder:
             word_vectors[token[0]] = [float(token[i]) for i in range(1, word_embedding_length + 1)]
         self.preprocessed_sentences = [self.preprocess(sentence) for sentence in self.sentences]
         glove.close()
-        self.importance = scores.sentence_importance_score(self.sentences)
+        self.importance = scores.sentence_importance_score(list(range(len(self.sentences))), self.sentences)
         self.sentence_vectors = []
         self.tokenized_sentences = [self.tokenize(text.lower()) for text in self.sentences]
         for sentence in self.preprocessed_sentences:
@@ -95,4 +95,15 @@ class StackedDecoder:
                         tmp = len(stacks[newlen])
                         if tmp == 0 or -newscore < stacks[newlen][0][0]:
                             heapq.heappush(stacks[newlen], (-newscore, newsol))
-        return stacks
+        return ' '.join([self.sentences[i] for i in self.get_best(stacks)])
+
+    def get_best(self, stacks):
+        res = []
+        best_score = -1
+        for stack in stacks:
+            if len(stack) == 0:
+                continue
+            if -stack[0][0] > best_score:
+                best_score = -stack[0][0]
+                res = stack[0][1]
+        return res
