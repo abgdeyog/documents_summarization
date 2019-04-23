@@ -2,77 +2,95 @@ import numpy as np
 import scores
 import heapq
 import nltk
+from sklearn.metrics.pairwise import cosine_similarity
 
 class StackedDecoder:
 
-    def __init__(self, doc, max_length):
-        self.doc = doc
-        self.max_length = max_length
-        self.stack = [[] for i in range(max_length + 1)]
+    # tokenize text using nltk lib
+    def tokenize(self, text):
+        return nltk.word_tokenize(text)
 
-    def build_dict(self, query):
-        '''
-        build dictionary from query
-        :param query: []
-        :return: {term:frequency}
-        '''
-        dict = {}
-        for word in query:
-            try:
-                dict[word] += 1
-            except KeyError:
-                dict[word] = 1
-        return dict
+    # checks if word is appropriate - not a stop word and isalpha
+    def is_apt_word(self, word):
+        return word not in self.stop_words and word.isalpha()
 
-    def cosine_scoring(self, dict1, dict2):
-        """
-        :param dict1: dictionary - term:frequency
-        :param dict2: dictionary - term:frequency
-        :return: score
-        """
-        score = 0
-        for term in dict1:
-            try:
-                score += dict1[term] * dict2[term]
-            except KeyError:
-                pass
-        if len(dict1) * len(dict2) == 0:
-            return 0
-        return score / (len(dict1) * len(dict2))
+    # combines all previous methods together
+    def preprocess(self, text):
+        tokenized = self.tokenize(text.lower())
+        return [w for w in tokenized if self.is_apt_word(w)]
 
+    def __init__(self, doc):
 
-    def importance(self, sol):
+        self.stop_words = {'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from', 'has', 'he', 'in', 'is', 'it',
+                      'its',
+                      'of', 'on', 'that', 'the', 'to', 'was', 'were', 'will', 'with'}
 
-        res = 0
-        for sentence in sol:
-            res += scores.sentence_importance(self.doc, sentence)
-        return 1 # sum of the importance of sentences
+        self.ps = nltk.stem.PorterStemmer()
 
+        glove = open('data/glove.6B.100d.txt', encoding='utf-8')
+        self.sentences = nltk.tokenize.sent_tokenize(doc)
+        word_embedding_length = 100
+        word_vectors = {}
+        for line in glove:
+            token = line.split()
+            word_vectors[token[0]] = [float(token[i]) for i in range(1, word_embedding_length + 1)]
+        self.preprocessed_sentences = [self.preprocess(sentence) for sentence in self.sentences]
+        glove.close()
+        self.importance = scores.sentence_importance_score(self.sentences)
+        self.sentence_vectors = []
+        self.tokenized_sentences = [self.tokenize(text.lower()) for text in self.sentences]
+        for sentence in self.preprocessed_sentences:
+            mean = [0] * word_embedding_length
+            if len(sentence) != 0:
+                for i in range(word_embedding_length):
+                    sum = 0
+                    count = 0
+                    for word in sentence:
+                        try:
+                            sum += word_vectors[word][i]
+                            count += 1
+                        except KeyError:
+                            pass
+                    mean[i] = sum / len(sentence)
+                self.sentence_vectors.append(mean)
 
-    def similarity(self, sentence1, sentence2):
-        return self.cosine_scoring(self.build_dict(sentence1), self.build_dict(sentence2))
+    def similarity(self, sentence_id_1, sentence_id_2):
+        return cosine_similarity(np.array(self.sentence_vectors[sentence_id_1]).reshape(1, -1),
+                                                     np.array(self.sentence_vectors[sentence_id_2]).reshape(1, -1))[0][0]
 
+    def solution_importance(self, sol):
+        return sum([self.importance[i] for i in sol])
 
     def similarity_to_solution(self, sol, sentence):
         return sum([self.similarity(sentence, sol_sent) for sol_sent in sol])/len(sol)
 
+    def summary(self, threshold=0.8, maxlength = 30):
+        stacks = [[] for i in range(maxlength + 2)] # list of priority queues
 
-    def summary(self, doc, threshold=1e-2, maxlength = 30):
-        stack = [[] for i in range(1, maxlength + 1)] # list of priority queues
-        sentences = nltk.sent_tokenize(doc)
-        for i in range(1, maxlength):
-            for score, sol in stack[i]:
-                for s in sentences:
-                    #newlen = maxlength + 1
-                    if i + len(s) <= maxlength:
-                        newlen = i + len(s)
-                        if self.similarity_to_solution(sol, sentences) < threshold or len(sol) == 0:
-                            newsol = sol.copy()
-                            newsol = heapq.heappush(newsol, sentences)
-                        else:
-                            continue
-                        newscore = self.importance(newsol)
-                        heapq.heappush(stack[newlen], (-newscore, newsol))
-                        # append to stack[newlen]
-        return heapq.heappop([maxlength])
+        for i in range(0, len(self.tokenized_sentences)):
+            index = maxlength
+            if len(self.tokenized_sentences[i]) <= maxlength:
+                index = len(self.tokenized_sentences[i])
+            heapq.heappush(stacks[index], (-self.importance[i], {i:1}))
 
+        for i in range(0, maxlength + 1):
+            if len(stacks[i]) == 0:
+                continue
+            stack_clone = stacks[i].copy()
+            for score, sol in stack_clone:
+                for s in range(len(self.tokenized_sentences)):
+                    if s in sol:
+                        continue
+                    newlen = maxlength + 1
+
+                    if i + len(self.tokenized_sentences[s]) <= maxlength:
+                        newlen = i + len(self.tokenized_sentences[s])
+
+                    if self.similarity_to_solution(sol, s) < threshold:
+                        newsol = sol.copy()
+                        newsol[s] = 1
+                        newscore = self.solution_importance(newsol)
+                        tmp = len(stacks[newlen])
+                        if tmp == 0 or -newscore < stacks[newlen][0][0]:
+                            heapq.heappush(stacks[newlen], (-newscore, newsol))
+        return stacks
