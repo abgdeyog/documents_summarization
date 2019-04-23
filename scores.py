@@ -2,9 +2,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 
 
 def sentence_length(sentence):
-    print(sentence)
     sentence = sentence.replace('\n', '').replace("'", "").replace("`", "")
-    print(sentence)
     return len(sentence)
 
 
@@ -41,15 +39,14 @@ def tf_idf_sum(sentence_id, tfidf_matrix):
     return tfidf_matrix[sentence_id].sum()
 
 
-def sentence_importance_score(sentences):
-    scores = []
+def sentence_importance_score(ids, sentences):
+    scores = [0]*len(sentences)
     tfidf_matrix = tf_id_init(sentences)
-    for sentence_id in range(len(sentences)):
-        scores.append(0)
+    for sentence_id in ids:
         scores[sentence_id] += sentence_length(sentences[sentence_id])
         scores[sentence_id] += upper_case_count(sentences[sentence_id])
         scores[sentence_id] += numerical_count(sentences[sentence_id])
-        scores[sentence_id] += sentence_pos(sentence_id, sentences)
+        #scores[sentence_id] += sentence_pos(sentence_id, sentences)
         scores[sentence_id] += tf_idf_sum(sentence_id, tfidf_matrix)
 
     return scores
