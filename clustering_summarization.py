@@ -6,9 +6,7 @@ import pandas as pd
 from nltk.corpus import stopwords
 from k_medoids import KMedoids
 import utils
-import matplotlib.pyplot as plt
-
-
+import scores
 
 
 def clean(sentences):
@@ -33,11 +31,11 @@ def cos_sim(vector1, vector2):
     """
     v1 = vector1.reshape(1, 100)
     v2 = vector2.reshape(1, 100)
-    return sklearn.cosine_similarity(v1, v2)[0, 0]
+    return 1 - sklearn.cosine_similarity(v1, v2)[0, 0]
 
-def generate_sentence_vectors(text, embedding_file):
+
+def generate_sentence_vectors(sentences, embedding_file):
     # split text into list of sentences
-    sentences = sent_tokenize(text)
     n = len(sentences)
     clean_sentences = clean(sentences)
     # Extract word vectors
@@ -65,20 +63,31 @@ def generate_sentence_vectors(text, embedding_file):
 
 
 def main():
+
     docs = utils.parse_docs('/Users/mac/Downloads/snickebod/duc2004/docs')
     print(sys.getsizeof(docs))
-    file = open('glove.6B.100d.txt', encoding='utf-8')
-
+    print(len(docs))
     for docno in docs:
-        sentence_vectors = generate_sentence_vectors(docs[docno], file)
+        print(docno)
 
-        X = np.random.normal(0, 3, (500, 2))
+        sentences = sent_tokenize(docs[docno])
+        with open('glove.6B.100d.txt', encoding='utf-8') as file:
+            sentence_vectors = generate_sentence_vectors(sentences, file)
+
         model = KMedoids(n_clusters=5, dist_func=cos_sim)
-        model.fit(sentence_vectors, plotit=True, verbose=True)
-        plt.show()
-        break
-    file.close()
+        centers = model.fit(sentence_vectors, plotit=True, verbose=True)
 
+        sent_scores = scores.sentence_importance_score(centers, sentences)
+
+        centers.sort(key=lambda x: sent_scores[x], reverse=True)
+        for i in range(len(sent_scores)):
+            if sent_scores[i] != 0:
+                print(f'Score of {i}th sentence: {sent_scores[i]}')
+        print(centers)
+        for _id in centers:
+            print(sentences[_id].replace('\n', ''))
+
+    file.close()
 
 if __name__ == '__main__':
     main()

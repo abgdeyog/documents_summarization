@@ -47,7 +47,8 @@ def _get_cost(X, centers_id, dist_func):
     return members, costs, np.sum(costs), dist_mat
 
 
-def _kmedoids_run(X, n_clusters, dist_func, max_iter=1000, tol=0.001, verbose=True):
+
+def _kmedoids_run(X, n_clusters, dist_func, max_iter=100, tol=0.001, verbose=True):
     '''run algorithm return centers, members, and etc.'''
     # Get initial centers
     n_samples, n_features = X.shape
@@ -58,9 +59,10 @@ def _kmedoids_run(X, n_clusters, dist_func, max_iter=1000, tol=0.001, verbose=Tr
     members, costs, tot_cost, dist_mat = _get_cost(X, init_ids, dist_func)
     cc, SWAPED = 0, True
     while True:
+        print(f'\nIteration number {cc}\n')
         SWAPED = False
         for i in range(n_samples):
-            if not i in centers:
+            if i not in centers:
                 for j in range(len(centers)):
                     centers_ = deepcopy(centers)
                     centers_[j] = i
@@ -109,7 +111,7 @@ class KMedoids(object):
         predict(X): predict cluster id given a test dataset.
     '''
 
-    def __init__(self, n_clusters, dist_func=_get_distance, max_iter=10000, tol=0.0001):
+    def __init__(self, n_clusters, dist_func=_get_distance, max_iter=5, tol=0.01):
         self.n_clusters = n_clusters
         self.dist_func = dist_func
         self.max_iter = max_iter
@@ -128,7 +130,7 @@ class KMedoids(object):
                 X_c = X[members == i, :]
                 ax.scatter(X_c[:, 0], X_c[:, 1], c=colors[i], alpha=0.5, s=30)
                 ax.scatter(X[centers[i], 0], X[centers[i], 1], c=colors[i], alpha=1., s=250, marker='*')
-        return
+        return centers
 
     def predict(self, X):
         raise NotImplementedError()
