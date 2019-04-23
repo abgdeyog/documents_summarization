@@ -47,7 +47,6 @@ def _get_cost(X, centers_id, dist_func):
     return members, costs, np.sum(costs), dist_mat
 
 
-
 def _kmedoids_run(X, n_clusters, dist_func, max_iter=100, tol=0.001, verbose=True):
     '''run algorithm return centers, members, and etc.'''
     # Get initial centers

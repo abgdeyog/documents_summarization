@@ -2,9 +2,9 @@ import sklearn.metrics.pairwise as sklearn
 import sys
 from nltk.tokenize import sent_tokenize
 import numpy as np
+from k_medoids import KMedoids
 import pandas as pd
 from nltk.corpus import stopwords
-from k_medoids import KMedoids
 import utils
 import scores
 
@@ -37,7 +37,7 @@ def cos_sim(vector1, vector2):
 def generate_sentence_vectors(sentences, embedding_file):
     # split text into list of sentences
     n = len(sentences)
-    clean_sentences = clean(sentences)
+    clean_sentences = utils.clean(sentences)
     # Extract word vectors
     word_embeddings = {}
     for line in embedding_file:
@@ -63,7 +63,6 @@ def generate_sentence_vectors(sentences, embedding_file):
 
 
 def main():
-
     docs = utils.parse_docs('/Users/mac/Downloads/snickebod/duc2004/docs')
     print(sys.getsizeof(docs))
     print(len(docs))
@@ -88,6 +87,7 @@ def main():
             print(sentences[_id].replace('\n', ''))
 
     file.close()
+
 
 if __name__ == '__main__':
     main()

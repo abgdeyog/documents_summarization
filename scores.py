@@ -1,18 +1,17 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-def build_dict(query):
-    '''
-    build dictionary from query
-    :param query: []
-    :return: {term:frequency}
-    '''
-    dict = {}
-    for word in query:
-        try:
-            dict[word] += 1
-        except KeyError:
-            dict[word] = 1
-    return dict
+
+def jaccard_similarity(sent1, sent2):
+    """
+
+    :param sent1: str, sentence1
+    :param sent2: str, sentence2
+    :return: Jaccard coefficient
+    """
+    set1 = set(sent1)
+    set2 = set(sent2)
+    return len(set1.intersection(set2)) / len(set1.union(set2))
+
 
 def cosine_scoring(dict1, dict2):
     """
@@ -26,9 +25,10 @@ def cosine_scoring(dict1, dict2):
             score += dict1[term] * dict2[term]
         except KeyError:
             pass
-    if len(dict1)*len(dict2) == 0:
+    if len(dict1) * len(dict2) == 0:
         return 0
-    return score/(len(dict1)*len(dict2))
+    return score / (len(dict1) * len(dict2))
+
 
 def sentence_length(sentence):
     sentence = sentence.replace('\n', '').replace("'", "").replace("`", "")
@@ -69,13 +69,13 @@ def tf_idf_sum(sentence_id, tfidf_matrix):
 
 
 def sentence_importance_score(ids, sentences):
-    scores = [0]*len(sentences)
+    scores = [0] * len(sentences)
     tfidf_matrix = tf_id_init(sentences)
     for sentence_id in ids:
         scores[sentence_id] += sentence_length(sentences[sentence_id])
         scores[sentence_id] += upper_case_count(sentences[sentence_id])
         scores[sentence_id] += numerical_count(sentences[sentence_id])
-        #scores[sentence_id] += sentence_pos(sentence_id, sentences)
+        # scores[sentence_id] += sentence_pos(sentence_id, sentences)
         scores[sentence_id] += tf_idf_sum(sentence_id, tfidf_matrix)
 
     return scores

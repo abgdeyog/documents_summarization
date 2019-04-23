@@ -22,9 +22,10 @@ class StackedDecoder:
 
     def __init__(self, doc):
 
-        self.stop_words = {'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from', 'has', 'he', 'in', 'is', 'it',
-                      'its',
-                      'of', 'on', 'that', 'the', 'to', 'was', 'were', 'will', 'with'}
+        self.stop_words = {'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for', 'from', 'has', 'he', 'in', 'is',
+                           'it',
+                           'its',
+                           'of', 'on', 'that', 'the', 'to', 'was', 'were', 'will', 'with'}
 
         self.ps = nltk.stem.PorterStemmer()
 
@@ -57,22 +58,22 @@ class StackedDecoder:
 
     def similarity(self, sentence_id_1, sentence_id_2):
         return cosine_similarity(np.array(self.sentence_vectors[sentence_id_1]).reshape(1, -1),
-                                                     np.array(self.sentence_vectors[sentence_id_2]).reshape(1, -1))[0][0]
+                                 np.array(self.sentence_vectors[sentence_id_2]).reshape(1, -1))[0][0]
 
     def solution_importance(self, sol):
         return sum([self.importance[i] for i in sol])
 
     def similarity_to_solution(self, sol, sentence):
-        return sum([self.similarity(sentence, sol_sent) for sol_sent in sol])/len(sol)
+        return sum([self.similarity(sentence, sol_sent) for sol_sent in sol]) / len(sol)
 
-    def summary(self, threshold=0.8, maxlength = 30):
-        stacks = [[] for i in range(maxlength + 2)] # list of priority queues
+    def summary(self, threshold=0.8, maxlength=30):
+        stacks = [[] for i in range(maxlength + 2)]  # list of priority queues
 
         for i in range(0, len(self.tokenized_sentences)):
             index = maxlength
             if len(self.tokenized_sentences[i]) <= maxlength:
                 index = len(self.tokenized_sentences[i])
-            heapq.heappush(stacks[index], (-self.importance[i], {i:1}))
+            heapq.heappush(stacks[index], (-self.importance[i], {i: 1}))
 
         for i in range(0, maxlength + 1):
             if len(stacks[i]) == 0:
